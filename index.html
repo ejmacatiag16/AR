@@ -324,23 +324,29 @@
 
     <!-- SHOE -->
     <div class="card">
-  <span class="frame-label">OBJ_02 · LAPTOP</span>
-  <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
-  <div class="sketchfab-embed-wrapper" style="height:320px;">
-    <iframe title="Laptop LOW POLY" style="width:100%;height:100%;border:none;"
-      allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true"
-      allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking
-      execution-while-out-of-viewport execution-while-not-rendered web-share
-      src="https://sketchfab.com/models/5ab676eefd934dd29ae77d5434a05d32/embed">
-    </iframe>
-  </div>
-  <div class="card-body">
-    <h3>Laptop (low poly)</h3>
-    <div class="meta">Sketchfab embed · AR via Sketchfab's own viewer</div>
-    <p>...</p>
-    <!-- no ar-trigger button here — Sketchfab has its own AR icon inside the iframe on mobile -->
-  </div>
-</div>
+      <span class="frame-label">OBJ_02 · SNEAKER</span>
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <model-viewer
+        id="mv-shoe"
+        src="https://modelviewer.dev/shared-assets/models/MaterialsVariantsShoe.glb"
+        alt="A 3D model of a sneaker"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        auto-rotate
+        shadow-intensity="1"
+        exposure="1"
+        environment-image="neutral">
+      </model-viewer>
+      <div class="card-body">
+        <h3>Sneaker</h3>
+        <div class="meta">GLB · multi-variant materials</div>
+        <p>Small, product-scale object — the kind of thing a retail or e-commerce AR demo would actually ship.</p>
+        <div class="actions">
+          <button class="ar-trigger" data-target="mv-shoe" data-name="Sneaker" data-key="shoe">View in AR</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ROBOT -->
     <div class="card">
