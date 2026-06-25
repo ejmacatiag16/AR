@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Scope — AR Object Demo</title>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+<style>
+  :root{
+    --ink:#0b0f14;
+    --panel:#11161d;
+    --line:#222b35;
+    --paper:#eef1f4;
+    --signal:#7cffb2;
+    --signal-dim:#3a8f63;
+    --warn:#ffb454;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--sans);}
+
+  /* top scan-line bar */
+  .ticker{
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    padding:8px 18px;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    color:var(--signal-dim);
+    display:flex;
+    justify-content:space-between;
+    text-transform:uppercase;
+  }
+  .ticker span.live{color:var(--signal);}
+  .ticker .dot{
+    display:inline-block;width:6px;height:6px;border-radius:50%;
+    background:var(--signal); margin-right:6px;
+    animation:pulse 1.6s infinite ease-in-out;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+  header{
+    padding:36px 24px 18px;
+    max-width:1080px;
+    margin:0 auto;
+  }
+  header .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--signal);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  h1{
+    font-size:clamp(28px,5vw,46px);
+    margin:0 0 8px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+    line-height:1.05;
+  }
+  header p{
+    color:#9aa7b4;
+    max-width:560px;
+    font-size:15px;
+    line-height:1.5;
+    margin:0;
+  }
+
+  main{
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 24px 80px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:22px;
+    margin-top:28px;
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:2px;
+    overflow:hidden;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+  }
+  .card .frame-label{
+    position:absolute;
+    top:10px; left:10px;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.1em;
+    color:#5d6b78;
+    z-index:2;
+    background:rgba(11,15,20,.6);
+    padding:2px 6px;
+    border:1px solid var(--line);
+  }
+  .corner{
+    position:absolute;
+    width:14px;height:14px;
+    border:1.5px solid var(--signal-dim);
+    z-index:2;
+    opacity:.7;
+  }
+  .corner.tl{top:8px;left:8px;border-right:none;border-bottom:none;}
+  .corner.tr{top:8px;right:8px;border-left:none;border-bottom:none;}
+  .corner.bl{bottom:8px;left:8px;border-right:none;border-top:none;}
+  .corner.br{bottom:8px;right:8px;border-left:none;border-top:none;}
+
+  model-viewer{
+    width:100%;
+    height:320px;
+    background:radial-gradient(circle at 50% 40%, #1a212b 0%, #0b0f14 75%);
+    --poster-color: transparent;
+  }
+
+  .card-body{
+    padding:16px 18px 18px;
+    border-top:1px solid var(--line);
+  }
+  .card-body h3{
+    margin:0 0 4px;
+    font-size:17px;
+    font-weight:600;
+  }
+  .card-body .meta{
+    font-family:var(--mono);
+    font-size:11px;
+    color:#5d6b78;
+    margin-bottom:10px;
+    letter-spacing:.04em;
+  }
+  .card-body p{
+    margin:0 0 14px;
+    font-size:13.5px;
+    color:#aab6c1;
+    line-height:1.45;
+  }
+
+  .actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  button.ar-trigger{
+    flex:1;
+    background:var(--signal);
+    color:#06140d;
+    border:none;
+    font-family:var(--mono);
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    padding:10px 12px;
+    cursor:pointer;
+    border-radius:2px;
+    transition:background .15s ease;
+  }
+  button.ar-trigger:hover{background:#9bffc4;}
+  button.ar-trigger:disabled{
+    background:var(--line);
+    color:#5d6b78;
+    cursor:not-allowed;
+  }
+  .ar-status{
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:#5d6b78;
+    align-self:center;
+    padding:0 4px;
+  }
+
+  footer{
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 24px 50px;
+    font-family:var(--mono);
+    font-size:11px;
+    color:#445261;
+    border-top:1px solid var(--line);
+    padding-top:20px;
+    line-height:1.6;
+  }
+  footer b{color:#7d8a96;}
+
+  .support-banner{
+    margin-top:20px;
+    border:1px dashed var(--line);
+    padding:12px 14px;
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--warn);
+    display:none;
+    letter-spacing:.02em;
+  }
+  .support-banner.show{display:block;}
+
+  /* QR modal */
+  .qr-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(6,9,12,.82);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    padding:24px;
+  }
+  .qr-overlay.show{display:flex;}
+  .qr-modal{
+    background:var(--panel);
+    border:1px solid var(--line);
+    max-width:340px;
+    width:100%;
+    padding:28px 26px 24px;
+    position:relative;
+    text-align:center;
+  }
+  .qr-modal .frame-label{
+    position:absolute;
+    top:10px; left:10px;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:.1em;
+    color:#5d6b78;
+  }
+  .qr-modal h4{
+    margin:10px 0 4px;
+    font-size:16px;
+    font-weight:600;
+  }
+  .qr-modal .obj-name{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--signal);
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    margin-bottom:18px;
+  }
+  .qr-box{
+    background:#fff;
+    padding:14px;
+    display:inline-block;
+    border:1px solid var(--line);
+  }
+  .qr-box img{
+    display:block;
+    width:200px;
+    height:200px;
+  }
+  .qr-modal p.hint{
+    margin:18px 0 0;
+    font-size:12.5px;
+    color:#9aa7b4;
+    line-height:1.5;
+  }
+  .qr-modal .close-btn{
+    margin-top:18px;
+    background:transparent;
+    border:1px solid var(--line);
+    color:#9aa7b4;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    padding:8px 16px;
+    cursor:pointer;
+  }
+  .qr-modal .close-btn:hover{border-color:var(--signal-dim);color:var(--paper);}
+  .qr-modal .corner{opacity:.5;}
+</style>
+</head>
+<body>
+
+<div class="ticker">
+  <span><span class="dot"></span><span class="live">SYSTEM READY</span> — model-viewer 3.5.0</span>
+  <span id="device-readout">DETECTING DEVICE…</span>
+</div>
+
+<header>
+  <div class="eyebrow">Augmented Reality · Object Viewer</div>
+  <h1>Point your camera<br>at the room.</h1>
+  <p>Three sample objects, ready to drop into your physical space. On a phone, tap "View in AR" to launch straight into your camera. On desktop, the same button shows a QR code — scan it and AR opens on your phone automatically.</p>
+  <div class="support-banner" id="support-banner"></div>
+</header>
+
+<main>
+  <div class="grid">
+
+    <!-- ASTRONAUT -->
+    <div class="card">
+      <span class="frame-label">OBJ_01 · ASTRONAUT</span>
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <model-viewer
+        id="mv-astronaut"
+        src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+        alt="A 3D model of an astronaut"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        auto-rotate
+        shadow-intensity="1"
+        exposure="1"
+        environment-image="neutral">
+      </model-viewer>
+      <div class="card-body">
+        <h3>Astronaut</h3>
+        <div class="meta">GLB · ~2.4 MB · no iOS file (Quick Look unavailable)</div>
+        <p>A full character mesh with PBR materials — good test of detail and scale against real furniture.</p>
+        <div class="actions">
+          <button class="ar-trigger" data-target="mv-astronaut" data-name="Astronaut" data-key="astronaut">View in AR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHOE -->
+    <div class="card">
+      <span class="frame-label">OBJ_02 · SNEAKER</span>
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <model-viewer
+        id="mv-shoe"
+        src="https://modelviewer.dev/shared-assets/models/MaterialsVariantsShoe.glb"
+        alt="A 3D model of a sneaker"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        auto-rotate
+        shadow-intensity="1"
+        exposure="1"
+        environment-image="neutral">
+      </model-viewer>
+      <div class="card-body">
+        <h3>Sneaker</h3>
+        <div class="meta">GLB · multi-variant materials</div>
+        <p>Small, product-scale object — the kind of thing a retail or e-commerce AR demo would actually ship.</p>
+        <div class="actions">
+          <button class="ar-trigger" data-target="mv-shoe" data-name="Sneaker" data-key="shoe">View in AR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROBOT -->
+    <div class="card">
+      <span class="frame-label">OBJ_03 · ROBOT</span>
+      <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+      <model-viewer
+        id="mv-robot"
+        src="https://modelviewer.dev/shared-assets/models/RobotExpressive.glb"
+        alt="A 3D model of an animated robot character"
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        auto-rotate
+        shadow-intensity="1"
+        exposure="1"
+        environment-image="neutral"
+        animation-name="Idle"
+        autoplay>
+      </model-viewer>
+      <div class="card-body">
+        <h3>Robot (animated)</h3>
+        <div class="meta">GLB · skeletal animation · idle loop</div>
+        <p>Carries a baked animation clip — useful for showing that AR objects don't have to be static.</p>
+        <div class="actions">
+          <button class="ar-trigger" data-target="mv-robot" data-name="Robot" data-key="robot">View in AR</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="qr-overlay" id="qr-overlay">
+  <div class="qr-modal">
+    <span class="frame-label">SCAN_TO_LAUNCH</span>
+    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+    <h4>Open this on your phone</h4>
+    <div class="obj-name" id="qr-obj-name">— OBJECT —</div>
+    <div class="qr-box"><img id="qr-img" src="" alt="QR code linking to this AR object on your phone"></div>
+    <p class="hint">Scan with your phone's camera. It'll open this object directly and AR will launch automatically — no app required.</p>
+    <button class="close-btn" id="qr-close">Close</button>
+  </div>
+</div>
+
+<footer>
+  <b>How this works —</b> each &lt;model-viewer&gt; tag loads a .glb file and renders it with WebGL.
+  On mobile, "View in AR" calls <code>activateAR()</code> directly, which checks WebXR → Scene Viewer → Quick Look in order.
+  On desktop, the same button instead shows a QR code pointing to this same page with a <code>?model=</code> parameter —
+  scanning it opens the page on your phone and auto-triggers AR for that object once it's loaded.<br><br>
+  <b>Important:</b> this QR flow only works once the page is hosted over HTTPS (e.g. Firebase Hosting, GitHub Pages, Netlify).
+  AR cannot launch from a local <code>file://</code> path or plain HTTP.<br><br>
+  <b>To swap in your own model —</b> replace the <code>src</code> attribute with a path to your <code>.glb</code>,
+  and add <code>ios-src="yourmodel.usdz"</code> if you want Quick Look support on iPhone.
+</footer>
+
+<script>
+  // Device / support readout
+  const readout = document.getElementById('device-readout');
+  const banner = document.getElementById('support-banner');
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isAndroid = /Android/.test(ua);
+
+  if (isIOS) {
+    readout.textContent = 'iOS DETECTED — QUICK LOOK NEEDS .USDZ';
+    banner.textContent = '⚠ These three demo objects don\'t ship a .usdz file, so AR mode will not launch on iPhone/iPad. The 3D viewer (drag to orbit) still works fully. Add an ios-src attribute with a .usdz to enable Quick Look.';
+    banner.classList.add('show');
+  } else if (isAndroid) {
+    readout.textContent = 'ANDROID DETECTED — SCENE VIEWER / WEBXR READY';
+  } else {
+    readout.textContent = 'DESKTOP — AR DISABLED, 3D ORBIT ACTIVE';
+  }
+
+  // Manual AR trigger buttons (in addition to model-viewer's built-in AR icon)
+  const isMobile = isIOS || isAndroid;
+  const overlay = document.getElementById('qr-overlay');
+  const qrImg = document.getElementById('qr-img');
+  const qrName = document.getElementById('qr-obj-name');
+  const qrClose = document.getElementById('qr-close');
+
+  function buildModelUrl(key) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('model', key);
+    url.hash = '';
+    return url.toString();
+  }
+
+  function showQR(key, name) {
+    const targetUrl = buildModelUrl(key);
+    const qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=0&data=' + encodeURIComponent(targetUrl);
+    qrImg.src = qrApi;
+    qrName.textContent = name;
+    overlay.classList.add('show');
+  }
+
+  qrClose.addEventListener('click', () => overlay.classList.remove('show'));
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('show');
+  });
+
+  document.querySelectorAll('.ar-trigger').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mv = document.getElementById(btn.dataset.target);
+      if (isMobile) {
+        if (mv) mv.activateAR();
+      } else {
+        showQR(btn.dataset.key, btn.dataset.name);
+      }
+    });
+  });
+
+  // If page was opened via a QR scan (?model=key), scroll to that card and
+  // auto-launch AR once the model has finished loading.
+  const params = new URLSearchParams(window.location.search);
+  const requestedModel = params.get('model');
+  if (requestedModel && isMobile) {
+    const btn = document.querySelector('.ar-trigger[data-key="' + requestedModel + '"]');
+    if (btn) {
+      const mv = document.getElementById(btn.dataset.target);
+      if (mv) {
+        mv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const launch = () => mv.activateAR();
+        if (mv.loaded) {
+          launch();
+        } else {
+          mv.addEventListener('load', launch, { once: true });
+        }
+      }
+    }
+  }
+</script>
+
+</body>
+</html>
